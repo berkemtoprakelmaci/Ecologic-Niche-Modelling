@@ -1,4 +1,4 @@
-# 🌴 Present and Future Distribution Projections of *Phoenix theophrasti* Greuter (Cretan Date Palm)
+# Present and Future Distribution Projections of *Phoenix theophrasti* Greuter (Cretan Date Palm)
 
 **Author:** Berkem Toprak Elmacı
 
@@ -10,7 +10,7 @@ Future projections are generated for two **SSP scenarios** (SSP126 and SSP585) a
 
 ---
 
-## 📁 Repository Structure
+## Repository Structure
 
 ```
 ├── Cretan_date_palm_Berkem_Toprak_Elmaci.Rmd   # Main R Markdown analysis file
@@ -28,7 +28,7 @@ Future projections are generated for two **SSP scenarios** (SSP126 and SSP585) a
 
 ---
 
-## 🔧 Requirements
+## Requirements
 
 ### R Packages
 
@@ -47,7 +47,7 @@ install.packages(c("biomod2", "raster", "dismo", "sp", "dplyr", "maxnet"))
 
 ---
 
-## 📦 Data Sources
+## Data Sources
 
 ### Occurrence Data
 - Downloaded from [GBIF](https://www.gbif.org/) — 129 occurrence records for *Phoenix theophrasti* Greuter
@@ -64,7 +64,7 @@ Selected bioclimatic variables: BIO1, BIO2, BIO3, BIO12, BIO14
 
 ---
 
-## 🧪 Methods
+## Methods
 
 1. **Data Acquisition** — Occurrence records from GBIF; bioclimatic rasters from WorldClim
 2. **Data Formatting** — `BIOMOD_FormatingData()` with 3,000 pseudo-absences (random strategy, 3 replicates)
@@ -74,7 +74,7 @@ Selected bioclimatic variables: BIO1, BIO2, BIO3, BIO12, BIO14
 
 ---
 
-## 📊 Key Results
+## Key Results
 
 - Current distribution is concentrated along **Aegean and Mediterranean coasts**
 - Under **SSP126**, the species shows potential range expansion into Mesopotamia
@@ -83,7 +83,7 @@ Selected bioclimatic variables: BIO1, BIO2, BIO3, BIO12, BIO14
 
 ---
 
-## ▶️ How to Run
+## Run
 
 1. Clone this repository
 2. Download the required raster `.tif` files from WorldClim (links above) and place them in the project root
@@ -96,16 +96,6 @@ rmarkdown::render("Cretan_date_palm_Berkem_Toprak_Elmaci.Rmd")
 
 ---
 
-## 📚 References
-
-- García-Granero et al. (2020). *Journal of Ethnobiology*, 40(1): 101–114.
-- Örücü, Ö. K. (2019). *Turkish Journal of Forestry*, 20(3), 274–283.
-- Phillips, S. J. et al. (2006). *Ecological Modelling*, 190(3-4), 231–259.
-- O'Neill, B. C. et al. (2014). *Climatic Change*, 122, 387–400.
-- Meinshausen, M. et al. (2020). *Geoscientific Model Development*, 13(8), 3571–3605.
-
----
-
-## 📄 License
+## License
 
 This project is for academic purposes. Please cite the original data sources (GBIF, WorldClim) if you reuse any data.
