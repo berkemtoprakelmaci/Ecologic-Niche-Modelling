@@ -1,0 +1,435 @@
+---
+title: "Present and Future Projections of (Phoenix theophrasti Greuter)"
+author: "Berkem Toprak Elmacı"
+output: 
+  html_document:
+    toc: true
+    toc_depth: 3
+    toc_float: true
+    number_sections: true
+header-includes:
+  - \usepackage{times}
+  - \renewcommand{\familydefault}{\sfdefault}
+---
+
+```
+# Copyright (C) 2026 Berkem Toprak Elmacı
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License.
+```
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r include=FALSE}
+setwd("C:/Users/0/Desktop/Rhomework")
+```
+
+# Introduction
+
+Phoenix theophrasti, Cretan date palm or Datça date palm, is a palm native to the eastern Mediterranean, in the southernmost points of Greece and Turkey. It belongs to the Arecaceae family. The European fan palm and the Datça date palm are the only native palm species in the Mediterranean basin, it is endemic to the Europe (García-Granero et al., 2020). Similarly, it is the only native palm species in Anatolia, all other species have been cultivated. Except for the palms and erect fruit clusters, which are generally inedible, the fruits of this species are quite similar to the cultivated palm. It grows in coastal areas within a few metres of the sea, along riverbanks, and in gorges, thriving in well-drained, sandy, or rocky, calcareous soils, and warm climates. It can reach heights of 17 m, with fronds up to 4 m long, and produces small, edible dates. It is well adapted to withstand drought and salt spray, making it an important species for stabilizing coastal ecosystems. Cretan date palm has little commercial value today. Its dates are smaller and less sweet than those of the cultivated date palm but are still consumed locally. The species may have been used as a food and non-food resource in Crete since Minoan times, and it is intertwined in the local identity and history of this region (García-Granero et al., 2020). Cretan date palm is valued ornamentally for its attractive appearance and its leaves are used when celebrating Palm Sunday in Crete.
+
+# Methods
+
+## Data
+
+### Acquiring Species Occurrence Data
+
+Occurrence data for Phoenix theophrasti Greuter (Cretan date palm in English) was taken from the Global Biodiversity Information Facility (GBIF) database. In this database, 129 occurrence data exist, most located in Crete island of Greece. In Turkey, 19 occurrence data for this species has been obtained, rest of is in Greece.
+
+```{r include=FALSE}
+setwd("C:/Users/0/Desktop/Rhomework")
+
+library(biomod2)
+library(raster)
+library(dismo)
+library(sp)
+library(dplyr)
+library(maxnet)
+
+occurence_data <- read.csv("C:/Users/0/Desktop/Rhomework/occurence_data.csv", sep = "\t", stringsAsFactors = FALSE)
+colnames(occurence_data)
+occurenceXY <- occurence_data[, c('decimalLongitude', 'decimalLatitude')]
+occurence_sample <- slice_sample(occurenceXY, n = 3000, replace = FALSE)
+```
+### Formating Data for biomod2
+
+Bioclimatic parameters were obtained from the WorldClim database, and Annual Mean Temperature (BIO1), Mean Diurnal Range (BIO2), Isothermality (BIO3), Annual Precipitation (BIO12) and Precipitation of Driest Month (BIO14) were chosen to be used in this project among the 19 bioclimatic parameters (https://www.worldclim.org/data/bioclim.html). Bioclimatic parameters (BIO1, BIO2, BIO3, BIO12 and BIO14) were then stacked with the spatial occurrence data (longitude and latitude) of Phoenix theophrasti Greuter obtained from the GBIF mentioned earlier by using BIOMOD_FormatingData function from the biomod2 library.
+
+```{r include=FALSE}
+myRespName <- 'phoenix.theophrasti'
+myResp <- SpatialPoints(coords = occurence_sample, proj4string = CRS(as.character(NA)), bbox = NULL)
+myRespXY <- data.frame(occurence_sample)
+
+bio1 <- raster("C:/Users/0/Desktop/Rhomework/wc2.1_2.5m_bio_1.tif") 
+bio2 <- raster("C:/Users/0/Desktop/Rhomework/wc2.1_2.5m_bio_2.tif") 
+bio3 <- raster("C:/Users/0/Desktop/Rhomework/wc2.1_2.5m_bio_3.tif") 
+bio12 <- raster("C:/Users/0/Desktop/Rhomework/wc2.1_2.5m_bio_12.tif")
+bio14 <- raster("C:/Users/0/Desktop/Rhomework/wc2.1_2.5m_bio_14.tif")
+
+myExpl <- stack(bio1, bio2,bio3, bio12,bio14)
+
+min_longitude <- 18  # Westernmost point
+max_longitude <- 46  # Easternmost point
+min_latitude <- 33   # Southernmost point
+max_latitude <- 43   # Northernmost point
+
+turkey_bbox <- extent(c(min_longitude, max_longitude, min_latitude, max_latitude))
+myExpl_cropped <- crop(myExpl, turkey_bbox)
+myBiomodData <- BIOMOD_FormatingData(resp.var=myResp,
+                                     expl.var = myExpl,
+                                     resp.xy= myRespXY,
+                                     resp.name=myRespName,
+                                     PA.nb.rep = 3,
+                                     PA.nb.absences = 3000,
+                                     PA.strategy = 'random',
+                                     na.rm = TRUE)
+
+```
+
+### Acquiring Historical & Future Bioclimatic Variables
+
+[Present bioclimatic variables](https://www.worldclim.org/data/worldclim21.html) were acquired from WorldClim website with 2.5 minutes spatial resolution. [Future bioclimatic variables](https://www.worldclim.org/data/cmip6/cmip6_clim5m.html) were acquired from WorldClim website with 2.5 minutes spatial resolution for 2021-2040 time period and ACCESS-CM2 estimations for SSP126. 
+Ecological niche models (ENMs) based on the mathematical or empirical approximations of ecolohigical niche of species. They can be used to predict future distribution of the species as well as the current distribution based on various parameters such as species location, environmental variables and climate envelope parameters such as bioclimatic parameters. As a result of their existing potential to have a strong effect on distribution of Phoenix theophrasti Greuter.
+
+## Modeling
+
+In this project, three modelling approaches were used which were MaxNet, GAM and CTA, and two types of metric evaluation approaches were used which were ROS and TSS. In the literature, MaxEnt modelling approach is frequently used to predict the future distribution of various species in globe or in countries. Therefore, MaxNet which is being a similar modelling approach to the MaxEnt was chosen to be used. The second method used was General Additive Model (GAM) because it is again used to construct ecological niche models very commonly. Furthermore, one additional model, Classification Tree Analysis (CTA) which is being a modelling approach generally used to construct presence-absence types of ENMs, is used to provide more comprehensive comparison within the models and with the literature. In addition, ROS is chosen as the evaluation metric in most of the studies which proves its existing accomplishment. TSS is used for comparison and enhancing the accuracy of the results. Three replicas were conducted for each model. At the end, all of the models were ensembled for each evaluation metrics and two final projections were obtained for current distribution. For the future distributions, two final projections for each year and SSPs were obtained. Ensembling was performed by using BIOMOD_EnsembleModeling function from the biomod2 R package.
+
+```{r include=FALSE}
+myBiomodModelout <- BIOMOD_Modeling(bm.format = myBiomodData,
+                                    modeling.id = paste(myRespName,"Modeling",sep=""),
+                                    models = c('MAXNET','GAM','CTA'),
+                                    nb.rep = 1,
+                                    data.split.perc = 80,
+                                    prevalence = 0.5,
+                                    var.import = 3,
+                                    metric.eval = c('ROC', 'TSS'),
+                                    scale.models = TRUE,
+                                    do.full.models = FALSE)
+
+myBiomodModelout_Ensembled <- BIOMOD_EnsembleModeling(
+  bm.mod=myBiomodModelout,
+  models.chosen = "all",
+  em.by = "all",
+  em.algo= "EMmedian",
+  metric.select = "all",
+  metric.select.thresh = NULL,
+  metric.select.table = NULL,
+  metric.select.dataset = NULL,
+  metric.eval = c("ROC", "TSS"),
+  var.import = 0,
+  EMci.alpha = 0.05,
+  EMwmean.decay = "proportional",
+  nb.cpu = 1,
+  seed.val = NULL,
+  do.progress = TRUE,
+  prob.mean,
+  prob.median,
+  prob.cv,
+  prob.ci,
+  committee.averaging,
+  prob.mean.weight,
+  prob.mean.weight.decay,
+  prob.ci.alpha
+)
+```
+
+## Projections
+
+Both projections were done by BIOMOD_Projection function of biomod2 R package. 
+Ensembled projections were done by BIOMOD_EnsembleForecasting function of biomod2 R package
+
+### Current Projection
+
+In this project, first current distribution is projected by using near current bioclimatic parameters which comprise the years between 1970 and 2000. Then, future distribution of the Phoenix theophrasti Greuter was projected for different SSPs in two different time periods. The first projections were carried out for SSP126 between 2021-2040 and 2041-2060. Which was followed by the projection of SSP585 for the same time periods. 
+
+```{r include=FALSE}
+myBiomodProj <- BIOMOD_Projection(bm.mod = myBiomodModelout,
+                                  new.env = myExpl_cropped,
+                                  proj.name = 'current',
+                                  models.chosen = 'all',
+                                  metric.binary = c('ROC','TSS'),
+                                  compress = TRUE,
+                                  clamping.mask=F)
+
+myBiomodProj_EnsProj <- BIOMOD_EnsembleForecasting(
+  bm.em = myBiomodModelout_Ensembled,
+  bm.proj = myBiomodProj,
+  models.chosen = 'all',
+  metric.binary = 'all',
+  metric.filter = 'all'
+)
+
+```
+
+### Future Projection
+
+For future bioclimatic parameters, different Shared Socioeconomic Pathways (SSPs) were selected to obtain future bioclimatic parameters. Shared Socioeconomic Pathways are frameworks of different scenarios based on energy, emissions, land use and some other effects of the parameters. SSPs provide integrated analysis for future climate distributions, impacts, migration etc. Five different SSPs are classified as defining inequality, socioeconomic and fossil fuel or intermediate or sustainable development. Usually, these SSPs are combined with 2100 forcing levels (W/m2) and various standard scenarios are available such as SSP126, SSP245, SSP370 known as regional competition and SSP585 or fossil fuel development based on ScenarioMIP which is part of International Coupled Model Intercomparison Project 6 (CMIP6) of World Climate Research Programme (WCRP). In this project, future bioclimatic parameters were selected for SSP126 and SSP585 and these two different scenarios were used to see the best and worst.
+
+```{r include=FALSE}
+
+#2021-2040 SSP126
+
+abio <- raster::stack("C:/Users/0/Desktop/Rhomework/ssp126_2040.tif")
+a_bio1 <- subset(abio, 1)
+a_bio2 <- subset(abio, 2)
+a_bio3 <- subset(abio, 3)
+a_bio12 <- subset(abio, 12)
+a_bio14 <- subset(abio, 14)
+
+myExplFuture <- stack(a_bio1, a_bio2, a_bio3,a_bio12,a_bio14)
+names(myExplFuture) = names(myExpl)
+myExplFuture1_cropped <- crop(myExplFuture,turkey_bbox)
+
+#2041-2060 SSP126
+
+abio_2040 <- raster::stack("C:/Users/0/Desktop/Rhomework/ssp126_2060.tif")
+a_bio1_2040 <- subset(abio_2040, 1)
+a_bio2_2040 <- subset(abio_2040, 2)
+a_bio3_2040 <- subset(abio_2040, 3)
+a_bio12_2040 <- subset(abio_2040, 12)
+a_bio14_2040 <- subset(abio_2040, 14)
+
+myExplFuture2 <- stack(a_bio1_2040, a_bio2_2040, a_bio3_2040,a_bio12_2040,a_bio14_2040)
+names(myExplFuture2) = names(myExpl)
+myExplFuture2_cropped <- crop(myExplFuture,turkey_bbox)
+
+
+#2021-2040 SSP585
+
+abio_2040SSP5 <- raster::stack("C:/Users/0/Desktop/Rhomework/ssp585_2040.tif")
+a_bio1_2040SSP5 <- subset(abio_2040SSP5, 1)
+a_bio2_2040SSP5 <- subset(abio_2040SSP5, 2)
+a_bio3_2040SSP5 <- subset(abio_2040SSP5, 3)
+a_bio12_2040SSP5 <- subset(abio_2040SSP5, 12)
+a_bio14_2040SSP5 <- subset(abio_2040SSP5, 14)
+
+myExplFuture3 <- stack(a_bio1_2040SSP5, a_bio2_2040SSP5, a_bio3_2040SSP5,a_bio12_2040SSP5,a_bio14_2040SSP5)
+
+names(myExplFuture3) = names(myExpl)
+myExplFuture3_cropped <- crop(myExplFuture3,turkey_bbox)
+
+#2041-2060 SSP585
+
+abio_2060SSP5 <- raster::stack("C:/Users/0/Desktop/Rhomework/ssp585_2060.tif")
+a_bio1_2060SSP5 <- subset(abio_2060SSP5, 1)
+a_bio2_2060SSP5 <- subset(abio_2060SSP5, 2)
+a_bio3_2060SSP5 <- subset(abio_2060SSP5, 3)
+a_bio12_2060SSP5 <- subset(abio_2060SSP5, 12)
+a_bio14_2060SSP5 <- subset(abio_2060SSP5, 14)
+
+myExplFuture4 <- stack(a_bio1_2060SSP5, a_bio2_2060SSP5, a_bio3_2060SSP5,a_bio12_2060SSP5,a_bio14_2060SSP5)
+
+names(myExplFuture4) = names(myExpl)
+myExplFuture4_cropped <- crop(myExplFuture,turkey_bbox)
+
+
+```
+
+```{r include=FALSE}
+myBiomodProjFut1 <- BIOMOD_Projection(bm.mod = myBiomodModelout,
+                                     new.env = myExplFuture1_cropped,
+                                     proj.name = 'abiotic',
+                                     models.chosen = 'all',
+                                     metric.binary = c('ROC', 'TSS'),
+                                     compress = TRUE,
+                                     clamping.mask= F)
+
+
+myBiomodProjFut2 <- BIOMOD_Projection(bm.mod = myBiomodModelout,
+                                     new.env = myExplFuture2_cropped,
+                                     proj.name = 'abiotic',
+                                     models.chosen = 'all',
+                                     metric.binary = c('ROC', 'TSS'),
+                                     compress = TRUE,
+                                     clamping.mask= F)
+
+
+myBiomodProjFut3 <- BIOMOD_Projection(bm.mod = myBiomodModelout,
+                                     new.env = myExplFuture3_cropped,
+                                     proj.name = 'abiotic',
+                                     models.chosen = 'all',
+                                     metric.binary = c('ROC', 'TSS'),
+                                     compress = TRUE,
+                                     clamping.mask= F)
+
+myBiomodProjFut4 <- BIOMOD_Projection(bm.mod = myBiomodModelout,
+                                     new.env = myExplFuture4_cropped,
+                                     proj.name = 'abiotic',
+                                     models.chosen = 'all',
+                                     metric.binary = c('ROC', 'TSS'),
+                                     compress = TRUE,
+                                     clamping.mask= F)
+
+```
+
+
+```{r include=FALSE}
+myBiomodProj_EnsProj1 <- BIOMOD_EnsembleForecasting(
+  bm.em = myBiomodModelout_Ensembled,
+  bm.proj = myBiomodProjFut1,
+  models.chosen = 'all',
+  metric.binary = 'all',
+  metric.filter = 'all'
+)
+
+myBiomodProj_EnsProj2 <- BIOMOD_EnsembleForecasting(
+  bm.em = myBiomodModelout_Ensembled,
+  bm.proj = myBiomodProjFut2,
+  models.chosen = 'all',
+  metric.binary = 'all',
+  metric.filter = 'all'
+)
+
+myBiomodProj_EnsProj3 <- BIOMOD_EnsembleForecasting(
+  bm.em = myBiomodModelout_Ensembled,
+  bm.proj = myBiomodProjFut3,
+  models.chosen = 'all',
+  metric.binary = 'all',
+  metric.filter = 'all'
+)
+
+myBiomodProj_EnsProj4 <- BIOMOD_EnsembleForecasting(
+  bm.em = myBiomodModelout_Ensembled,
+  bm.proj = myBiomodProjFut4,
+  models.chosen = 'all',
+  metric.binary = 'all',
+  metric.filter = 'all'
+)
+
+```
+## Assessing Model Performances
+
+At this part of the project, model assesments were performed. As a result, specificity, calibration, cutoff and validation scores of each model for each metric evaluation method is obtained. Based on these results, it can be stated that the CTA model had the highest specificity among three models for both ROC and TSS evaluation metric. The CTA model also had the highest calibration and validation values as well. In addition, a trend for each model observed in a way that specificity, calibration and validation values of models for ROC is higher than the TSS. 
+
+```{r include=FALSE}
+myBiomodModelEval <- get_evaluations(myBiomodModelout)
+show(myBiomodModelEval)
+```
+# Results
+
+## Present Projection
+
+In the figure below, the current distribution is shown. For all three models (MaxNet, GAM and CTA) the Aegean and Mediterranean coasts showed a higher density for the Phoenix theophrasti Greuter distribution. In all models, distributions are seen in different areas, these differences are due to the differences in approaches between the models. In the Maxent model and GAM, the density of occurrence points in the Mesopotamia and Levant region between the Euphrates and Tigris rivers is noticeable, while in the CTA model, an increase is seen in the Aegean region, which is a more limited area.
+
+```{r echo=FALSE}
+plot(myBiomodProj)
+```
+```{r echo=FALSE}
+plot(myBiomodProj_EnsProj1)
+```
+
+Additionally, in the figure above, the ensemble version of all models for the current projection is showed. Based on this projection, it can be concluded that ensembled models also strongly suggest these regions for high density of distribution as mentioned. However, when all of the models were ensembled, Aegean coasts and mesopotamia (the area between two rivers) had a higher density compared to the inner landscapes in each model.
+
+## 2021-2040 SSP126 Future Projection
+
+In the figure provided below, the future projection between 2021 and 2040 time period under SSP126 scenario was shown. This result suggested the distribution of Phoenix theophrasti Greuter will increase dramatically in this time period; however, there will be an increase in the regions where the Phoenix theophrasti Greuter was already present.
+
+```{r echo=FALSE}
+plot(myBiomodProjFut1)
+```
+
+## 2041-2060 SSP126 Future Projection
+
+Furthermore, when a further time period for the SSP126 was analyzed (2041-2060), it was observed that the regions that were mentioned in the current and 2021-2040 distribution can face with an increased Phoenix theophrasti Greuter. However, the main difference in this time period was some regions showed a possible distribution sites.
+
+```{r echo=FALSE}
+plot(myBiomodProjFut2)
+```
+ 
+
+## 2021-2040 SSP585 Future Projection
+
+The next two projections were carried out under SSP585 scenario. In the figure below, the future distribution of Phoenix theophrasti Greuter between 2021-2040 time period was given.
+
+```{r echo=FALSE}
+plot(myBiomodProjFut3)
+```
+
+## 2041-2060 SSP585 Future Projection
+
+In the last projection, 2041-2060 time period under SSP585 scenario was shown. There was no significant difference between SSP585 time periods for this time period.  Also, some replicas of GAM and CTA models suggested possible distribution of Phoenix theophrasti Greuter can be observed in the future.
+
+```{r echo=FALSE}
+plot(myBiomodProjFut4)
+```
+## Ensembled Models
+
+Lastly, future projections were ensembled for each SSP and time period shown above. In the figure shown below, the ensembled projection of the SSP126 between 2021 and 2040 was shown. The ensemble projection indicates a strong probability of distribution and presence of Phoenix theophrasti Greuter species in the Aegean coast and Mesopotamia.
+
+```{r echo=FALSE}
+plot(myBiomodProj_EnsProj1)
+```
+
+```{r echo=FALSE}
+plot(myBiomodProj_EnsProj2)
+```
+
+```{r echo=FALSE}
+plot(myBiomodProj_EnsProj3)
+```
+
+```{r echo=FALSE}
+plot(myBiomodProj_EnsProj4)
+```
+Above, the remaining ensembled models were shown. From top to bottom, 2021-2040 SSP126 ensembled model, 2041-2060 SSP126 ensembled model, 2021-2040 SSP585 ensembled model and finally 2041-2060 SSP585 ensembled model were shown. All of them suggested more or less the same result for Phoenix theophrasti Greuter. 
+
+# Discussion
+
+## Current Distribution
+
+The current distribution of Phoenix theophrasti Greuter primarily indicates its presence in regions characterized by Mediterranean climatic conditions, specifically along the Aegean and Mediterranean coasts (Greuter, 1967). The ensembled models corroborate these findings, consistently highlighting these areas as high-density regions for the species (Örücü, 2019). The occurrence data derived from GBIF and the bioclimatic parameters further validate the ecological preferences of the species, such as warmer annual temperatures (BIO1), low precipitation during dry months (BIO14), and stable diurnal ranges (BIO2) (GBIF, 2023). Differences among individual models (MaxNet, GAM, and CTA) reflect variations in methodology and parameter sensitivities (Phillips, Anderson, & Schapire, 2006). For instance, the MaxNet and GAM models show higher density predictions for regions like Mesopotamia and the Levant, emphasizing the potential ecological suitability of these areas (Phillips, Anderson, & Schapire, 2006). On the other hand, the CTA model restricts its predictions to the Aegean region, aligning closely with the actual occurrence records (R Development Core Team, n.d.). This discrepancy underscores the importance of using ensemble modeling to integrate the strengths of each approach, providing a more comprehensive and reliable prediction of species distribution. Overall, the current projections suggest that Phoenix theophrasti Greuter thrives in coastal environments, where its ecological requirements are met. The ensembled models align well with the observed data, confirming the utility of combining multiple modeling techniques to improve the accuracy of predictions.(Fletcher & Fortin, 2018)
+
+## Future Distribution and Comparison to Literature
+
+The future distribution of Phoenix theophrasti Greuter was projected under two Shared Socioeconomic Pathways (SSP126 and SSP585) for two time periods (2021-2040 and 2041-2060) (O'Neill et al., 2014). These projections provide insights into the species' potential responses to changing climatic conditions. Under the SSP126 scenario, which assumes a sustainable development pathway with lower emissions, the projections suggest an expansion of Phoenix theophrasti Greuter's suitable habitats along the Aegean and Mediterranean coasts and into Mesopotamia. Between 2041 and 2060, the models indicate a possible increase in distribution density in the regions previously identified, as well as the emergence of new suitable habitats. This outcome highlights the species' ability to adapt to moderate climate changes, particularly in regions with stable bioclimatic conditions (Smith & Sheridan, 2021). 
+
+```{r echo=FALSE}
+plot(myBiomodProj)
+```
+```{r echo=FALSE}
+plot(myBiomodProjFut2)
+```
+
+In contrast, the SSP585 scenario, representing a high-emission pathway, predicts relatively stable but localized distributions for the species (Meinshausen et al., 2020). For both 2021-2040 and 2041-2060 time periods, the models show no significant differences, suggesting that extreme climate conditions might restrict the species to its core habitats in the Aegean and Mesopotamian regions (Örücü, 2019). Interestingly, some replicas of the GAM and CTA models suggest potential expansions in these regions, albeit with less certainty compared to SSP126 (Boydak, 2019). The ensemble models for both scenarios confirm the robustness of the projections, with strong indications that the Aegean and Mesopotamian regions will remain critical habitats for Phoenix theophrasti Greuter in the future (Örücü, 2019).
+
+```{r echo=FALSE}
+plot(myBiomodProj_EnsProj2)
+```
+However, under SSP126, the species appears more capable of expanding its range, likely due to the milder impacts of climate change compared to SSP585. These findings underscore the need for conservation strategies that prioritize the preservation of critical habitats, particularly in light of varying climate change scenarios. The results also highlight the importance of integrating climate adaptation measures into broader conservation plans to ensure the long-term survival of Phoenix theophrasti Greuter.(Boydak, 2019)
+
+# Conclusion
+
+Phoenix theophrasti Greuter is a plant species that grows only in a specific geographic region, making it endemic. The distribution of endemic species can vary over time due to changes in environmental conditions, climate change, habitat loss, and other ecological factors. In this context, predicting the future distribution of Phoenix theophrasti Greuter plays a critical role in determining conservation strategies aimed at increasing the species' chances of survival. Moreover, monitoring the distribution of this species can contribute to the conservation of local biodiversity and provide valuable insights for public health. For example, certain chemical compounds found in endemic plants like Phoenix theophrasti Greuter may have potential therapeutic uses in medical or biomedical research. Therefore, understanding the conservation and changes in the ecosystems of this species is beneficial not only for environmental protection but also for the advancement of public health services. Specifically, being prepared for potential diseases or health issues that may arise in ecosystems where this species exists is strategically important for local health policies.
+
+# Outcome
+
+First, I learned how to determine the occurrence of a species. To do this, we use the GBIF database. Then, I learned how to construct an ecological niche model using the data I obtained. This can be done with various parameters, such as bioclimatic parameters, which are one of the options. I retrieved both current and future parameters from the WorldClim database. Using the biomod2 package in R, I created ecological niche models for both the current and future time periods with different SSPs. During this process, I gained an understanding of how the functions within biomod2 work, such as formatting, modeling, and projecting the data. Afterward, I needed to crop my map to display only Turkey, which was initially challenging, but I solved the problem by fully understanding how these functions work and writing some code. Finally, I ensembled all the models to obtain the final ensemble model. To do this, I used two different functions: BIOMOD_EnsembleModeling and BIOMOD_EnsembleForecasting. In general, although I had worked with R before, this project helped me gain experience with R Markdown.
+
+# References
+
+Boydak, M. (2019). A new subspecies of Phoenix theophrasti Greuter (Phoenix theophrasti Greuter subsp. golkoyana Boydak) from Turkey. Forestist, 69(2), 133-144.
+
+Fletcher, R., & Fortin, M.-J. (2018). Species Distributions. Spatial Ecology and Conservation Modeling, 213–269. doi:10.1007/978-3-030-01989-1_7 
+
+García-Granero, J.J., Skoula, M., Sarpaki, A., Cárdenas, M., Madella, M., and Bogaard, A. 2020. A long-term assessment of the use of Phoenix theophrasti Greuter (Cretan date palm): The ethnobotany and archaeobotany of a neglected palm. Journal of Ethnobiology, 40(1): 101–114.
+ 
+GBIF Secretariat. (n.d.). Buxus handsworthii K.Koch. Global Biodiversity Information Facility. Retrieved January 28, 2025, from https://www.gbif.org/species/5293186
+
+Meinshausen, M., Nicholls, Z. R., Lewis, J., Gidden, M. J., Vogel, E., Freund, M., ... & Wang, R. H. (2020). The shared socio-economic pathway (SSP) greenhouse gas concentrations and their extensions to 2500. Geoscientific Model Development, 13(8), 3571-3605.
+
+O’Neill, B. C., Kriegler, E., Riahi, K., Ebi, K. L., Hallegatte, S., Carter, T. R., ... & Van Vuuren, D. P. (2014). A new scenario framework for climate change research: the concept of shared socioeconomic pathways. Climatic change, 122, 387-400.
+
+Örücü, Ö. K. (2019). Phoenix theophrasti Gr.’nin iklim değişimine bağlı günümüz ve gelecekteki yayılış alanlarının MaxEnt Modeli ile tahmini ve bitkisel tasarımda kullanımı. Turkish Journal of Forestry, 20(3), 274-283.
+
+Phillips, S. J., Anderson, R. P., & Schapire, R. E. (2006). Maximum entropy modeling of species geographic distributions. Ecological modelling, 190(3-4), 231-259.
+
+R Development Core Team. (n.d.). BIOMOD_Modeling: Modeling functions for species distribution. Retrieved January 28, 2025, from https://rdrr.io/cran/biomod2/man/BIOMOD_Modeling.html
+
+Royal Botanic Gardens, Kew. (n.d.). Buxus handsworthii K.Koch. Plants of the World Online. Retrieved January 28, 2025, from https://powo.science.kew.org/taxon/urn:lsid:ipni.org:names:668954-1
+
+Smith, E. T., & Sheridan, S. C. (2021). Projections of cold air outbreaks in CMIP6 earth system models. Climatic Change, 169(1), 14.
