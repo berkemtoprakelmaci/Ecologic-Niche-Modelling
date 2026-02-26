@@ -8,7 +8,6 @@ This project models the **current and future distribution** of *Phoenix theophra
 
 Future projections are generated for two **SSP scenarios** (SSP126 and SSP585) and two **time periods** (2021–2040 and 2041–2060).
 
----
 
 ## Repository Structure
 
@@ -26,7 +25,6 @@ Future projections are generated for two **SSP scenarios** (SSP126 and SSP585) a
 
 > **Note:** Raster files (`.tif`) and occurrence CSV are not tracked by Git due to file size. Download instructions are provided below.
 
----
 
 ## Requirements
 
@@ -45,7 +43,6 @@ install.packages(c("biomod2", "raster", "dismo", "sp", "dplyr", "maxnet"))
 | `dplyr`   | Data manipulation |
 | `maxnet`  | MaxEnt implementation |
 
----
 
 ## Data Sources
 
@@ -62,8 +59,6 @@ install.packages(c("biomod2", "raster", "dismo", "sp", "dplyr", "maxnet"))
 
 Selected bioclimatic variables: BIO1, BIO2, BIO3, BIO12, BIO14
 
----
-
 ## Methods
 
 1. **Data Acquisition** — Occurrence records from GBIF; bioclimatic rasters from WorldClim
@@ -72,16 +67,12 @@ Selected bioclimatic variables: BIO1, BIO2, BIO3, BIO12, BIO14
 4. **Projection** — Current + 4 future scenarios (2 SSPs × 2 time periods), cropped to Turkey/Aegean region
 5. **Ensemble Modeling** — `BIOMOD_EnsembleModeling()` + `BIOMOD_EnsembleForecasting()`
 
----
-
 ## Key Results
 
 - Current distribution is concentrated along **Aegean and Mediterranean coasts**
 - Under **SSP126**, the species shows potential range expansion into Mesopotamia
 - Under **SSP585**, distribution remains restricted to core coastal habitats
 - Ensemble models consistently identify Aegean coast as a critical habitat
-
----
 
 ## Run
 
@@ -93,8 +84,6 @@ Selected bioclimatic variables: BIO1, BIO2, BIO3, BIO12, BIO14
 ```r
 rmarkdown::render("Cretan_date_palm_Berkem_Toprak_Elmaci.Rmd")
 ```
-
----
 
 ## License
 
